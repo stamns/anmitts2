@@ -1,0 +1,31 @@
+{
+  "data": {
+    "list": [
+      {
+        "tag": "DeepSeek",
+        "title": "DeepSeek Voice",
+        "icon": "https://bot.n.cn/avatar/deepseek.png"
+      },
+      {
+        "tag": "BoyVoice",
+        "title": "Boy Voice",
+        "icon": "https://bot.n.cn/avatar/boy.png"
+      },
+      {
+        "tag": "GirlVoice",
+        "title": "Girl Voice",
+        "icon": "https://bot.n.cn/avatar/girl.png"
+      },
+      {
+        "tag": "OldManVoice",
+        "title": "Old Man Voice",
+        "icon": "https://bot.n.cn/avatar/oldman.png"
+      },
+      {
+        "tag": "OldWomanVoice",
+        "title": "Old Woman Voice",
+        "icon": "https://bot.n.cn/avatar/oldwoman.png"
+      }
+    ]
+  }
+}
