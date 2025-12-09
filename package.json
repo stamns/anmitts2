@@ -1,0 +1,29 @@
+{
+  "name": "nanoaitts-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for NanoAITTS - Text to Speech conversion using bot.n.cn API",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "publish": "wrangler publish",
+    "test": "node tests/test.js",
+    "lint": "eslint src --fix",
+    "format": "prettier --write src"
+  },
+  "keywords": [
+    "tts",
+    "text-to-speech",
+    "cloudflare-worker",
+    "bot.n.cn",
+    "nanoaitts"
+  ],
+  "author": "TTS Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240604.0",
+    "wrangler": "^3.28.0"
+  },
+  "dependencies": {}
+}
