@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/components/AudioPlayer.tsx","./src/components/TTSForm.tsx","./src/components/VoiceSelector.tsx","./src/hooks/useTTS.ts","./src/services/api.ts","./src/types/index.ts"],"version":"5.9.3"}

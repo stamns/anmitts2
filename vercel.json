@@ -1,0 +1,19 @@
+{
+  "projectId": "your_project_id_here",
+  "orgId": "your_org_id_here",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/dist",
+  "framework": "vite",
+  "env": [
+    {
+      "key": "VITE_API_URL",
+      "value": "https://api.example.com"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ]
+}
