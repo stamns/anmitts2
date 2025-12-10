@@ -1,752 +1,410 @@
-# NanoAITTS Worker
+# 🎙️ 纳米AI文字转语音工具（Cloudflare Workers 版本）
 
-A Cloudflare Worker implementation of NanoAITTS - Text to Speech conversion service using the bot.n.cn API.
+无需安装，在线使用，调用 NanoAI API，支持多种中文和英文声音。基于 Cloudflare Workers 的无服务器架构，提供高质量的语音合成服务。
 
-This project converts the original Python NanoAITTS implementation to a serverless JavaScript worker that runs on Cloudflare's global network.
+## 核心特性
 
-## Features
+- 🌐 **在线使用**：无需任何安装和部署复杂性
+- 🎯 **高质量语音合成**：基于 NanoAI (bot.n.cn) 的专业语音技术
+- 🎤 **丰富声音选择**：支持 20+ 中文和英文声音，动态加载
+- 📡 **双播放模式**：流式播放（边生成边播放）和标准播放两种模式
+- 🧹 **智能文本处理**：多阶段清理（Markdown、Emoji、URL、换行等）
+- 📱 **响应式 Web UI**：Vue 3 前端，支持桌面、平板、手机
+- ⚙️ **参数调节**：可调节语速（0.25-2.0）和音调（0.5-1.5）
+- 💾 **本地缓存**：自动保存配置和表单数据到 localStorage
+- 🔄 **自动批处理**：长文本智能分块处理，提高稳定性
 
-- **Text to Speech Conversion**: Convert text to high-quality MP3 audio using bot.n.cn API
-- **Multiple Voices**: Support for multiple voice options (dynamically loaded from bot.n.cn)
-- **Intelligent Text Processing**: 
-  - Multi-stage text cleaning (Markdown, emojis, URLs, etc.)
-  - Smart text chunking by sentence boundaries
-  - Automatic batch processing
-- **OpenAI Compatible API**: REST endpoints compatible with OpenAI's TTS API format
-- **CORS Support**: Full CORS support for cross-origin requests
-- **Voice Caching**: Automatic caching of voice list using Cloudflare KV
-- **Error Handling**: Comprehensive error handling and validation
-- **Stream Support**: Ready for streaming responses
+## 详细部署指南
 
-## Project Structure
+### 1.3.1 前置条件
+
+- Cloudflare 免费账户（https://dash.cloudflare.com）
+- Node.js 18+ 和 npm
+- Git
+- 可选：自定义域名（使用 Cloudflare）
+
+### 1.3.2 本地开发环境准备
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/stamns/anmitts2.git
+cd anmitts2
+
+# 2. 安装 Wrangler CLI
+npm install -g @cloudflare/wrangler
+# 或使用 npx (不需要全局安装)
+npx wrangler --version
+
+# 3. 配置环境变量（可选）
+cp .env.example .env.local
+# 编辑 .env.local，按需配置 API_KEY、LOG_LEVEL 等
+```
+
+### 1.3.3 Wrangler 认证和项目配置
+
+```bash
+# 登录 Cloudflare 账户
+npx wrangler login
+# 浏览器会打开登录页面，授权后返回终端
+
+# 检查 wrangler.toml 配置
+# 确保以下字段正确：
+# - name = "anmitts2" (Worker 名称，会生成 anmitts2.*.workers.dev)
+# - main = "src/index.js"
+# - compatibility_date = "2024-12-01"
+```
+
+### 1.3.4 本地测试
+
+```bash
+# 启动本地开发服务器
+npx wrangler dev
+
+# 输出类似：
+# ▲ [wrangler:inf] Ready on http://localhost:8787
+
+# 在浏览器打开 http://localhost:8787
+# 应该看到 Vue 3 UI 界面
+
+# 测试 API 端点（新终端窗口）：
+curl http://localhost:8787/api/health
+curl http://localhost:8787/v1/models
+```
+
+### 1.3.5 部署到 Cloudflare Workers
+
+```bash
+# 部署到生产环境
+npx wrangler deploy
+
+# 输出类似：
+# ✨ Successfully published your Worker to
+# https://anmitts2.your-account.workers.dev
+
+# 复制生成的 URL，这就是你的公网访问地址
+```
+
+### 1.3.6 验证部署成功
+
+- 在浏览器打开部署的 URL：https://anmitts2.your-account.workers.dev
+- 应该看到 Vue 3 UI 界面
+- 可以输入文本并生成语音
+- 测试流式和标准播放两种模式
+
+## 环境变量配置说明
+
+```bash
+# .env.example 文件说明：
+
+API_KEY=your-api-key-here (可选)
+# - 如果留空，API 无认证要求
+# - 如果设置，前端需要在请求头中提供 Authorization: Bearer {API_KEY}
+
+LOG_LEVEL=info (可选)
+# - 日志级别：debug | info | warn | error
+# - 默认：info
+```
+
+## 项目结构说明
 
 ```
+anmitts2/
 ├── src/
-│   ├── index.js                 # Worker entry point and request routing
+│   ├── index.js               # Worker 主入口，包含路由和 HTML UI
 │   ├── services/
-│   │   ├── tts.js              # Main TTS orchestration service
-│   │   ├── nano-ai-tts.js       # NanoAITTS API client
-│   │   └── text-processor.js    # Text cleaning and chunking utilities
+│   │   ├── tts.js             # TTS 核心逻辑
+│   │   ├── text-processor.js  # 文本处理和分块
+│   │   └── nano-ai-tts.js     # NanoAI API 调用
 │   └── utils/
-│       └── md5.js              # MD5 hash implementation
-├── tests/
-│   └── test.js                 # Test scripts (curl examples)
-├── wrangler.toml               # Cloudflare Workers configuration
-├── package.json                # Node.js dependencies
-├── .env.example                # Environment variables template
-├── README.md                   # This file
-└── DEPLOYMENT.md               # Deployment guide
+│       └── md5.js             # MD5 哈希工具
+├── wrangler.toml              # Cloudflare Workers 配置
+├── package.json               # npm 依赖
+├── .env.example               # 环境变量模板
+├── .gitignore                 # git 忽略规则
+└── README.md                  # 本文档
 ```
 
-## Installation
+## API 文档
 
-### Prerequisites
+### GET /api/health - 健康检查
 
-- Node.js 16+ and npm
-- Wrangler CLI: `npm install -g @cloudflare/wrangler`
-- Cloudflare account
-
-### Setup
-
-1. Clone the repository:
-```bash
-git clone <repository>
-cd nanoaitts-worker
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Configure environment variables (optional):
-```bash
-cp .env.example .env
-# Edit .env with your settings
-```
-
-4. (Optional) Set up Cloudflare KV namespace for voice caching:
-```bash
-wrangler kv:namespace create "NANO_AI_TTS_KV"
-wrangler kv:namespace create "NANO_AI_TTS_KV" --preview
-```
-
-Update `wrangler.toml` with the namespace IDs.
-
-## Development
-
-Start the local development server:
-
-```bash
-npm run dev
-```
-
-The worker will be available at `http://localhost:8787`
-
-## API Endpoints
-
-### Health Check
-
-**GET** `/api/health`
-
-Check if the service is healthy and get voice count.
-
-Response:
-```json
-{
-  "status": "healthy",
-  "service": "nanoaitts-worker",
-  "voicesAvailable": 10,
-  "timestamp": "2024-12-10T12:00:00Z"
-}
-```
-
-### Models (OpenAI Compatible)
-
-**GET** `/v1/models`
-
-Get list of available TTS models.
-
-Response:
-```json
-{
-  "object": "list",
-  "data": [
-    {
-      "id": "DeepSeek",
-      "object": "model",
-      "created": 1702200000,
-      "owned_by": "nanoaitts",
-      "permission": [],
-      "root": "bot.n.cn",
-      "parent": null
-    }
-  ]
-}
-```
-
-### Voices
-
-**GET** `/v1/voices`
-
-Get list of available voices.
-
-Response:
-```json
-{
-  "object": "list",
-  "data": [
-    {
-      "id": "DeepSeek",
-      "name": "DeepSeek (Default)",
-      "iconUrl": "https://..."
-    }
-  ]
-}
-```
-
-### Text to Speech
-
-**POST** `/v1/audio/speech`
-
-Convert text to speech.
-
-Request:
-```json
-{
-  "input": "Hello, how are you?",
-  "voice": "DeepSeek",
-  "speed": 1.0,
-  "pitch": 1.0,
-  "stream": false
-}
-```
-
-Parameters:
-- `input` (string, required): Text to convert to speech (max 10,000 characters)
-- `voice` (string, optional): Voice ID (default: "DeepSeek")
-- `speed` (number, optional): Playback speed (0.5 - 2.0, default: 1.0)
-- `pitch` (number, optional): Pitch adjustment (0.5 - 2.0, default: 1.0)
-- `stream` (boolean, optional): Stream response (default: false)
-
-Response:
-- Content-Type: `audio/mpeg`
-- Body: MP3 audio file
-
-### Refresh Voices
-
-**POST** `/v1/voices/refresh`
-
-Refresh the voice list cache (requires API key if configured).
-
-Headers:
-```
-Authorization: Bearer YOUR_API_KEY
-```
-
-Response:
-```json
-{
-  "message": "Voices refreshed successfully",
-  "voicesCount": 10
-}
-```
-
-## Testing
-
-### Using curl
-
-Health check:
+**请求：**
 ```bash
 curl http://localhost:8787/api/health
 ```
 
-Get voices:
-```bash
-curl http://localhost:8787/v1/voices
+**响应：**
+```json
+{
+  "status": "ok",
+  "timestamp": "2024-12-10T10:00:00.000Z"
+}
 ```
 
-Generate speech:
+### GET /v1/models - 获取可用声音列表
+
+**请求：**
+```bash
+curl http://localhost:8787/v1/models
+```
+
+**响应：**
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "zh-CN-XiaoXiaoNeural",
+      "object": "model",
+      "owned_by": "nanodotai",
+      "permission": []
+    },
+    ...
+  ]
+}
+```
+
+### POST /v1/audio/speech - 生成语音
+
+**请求：**
 ```bash
 curl -X POST http://localhost:8787/v1/audio/speech \
   -H "Content-Type: application/json" \
   -d '{
-    "input": "你好，世界",
-    "voice": "DeepSeek"
-  }' \
-  --output output.mp3
-```
-
-### Using fetch
-
-```javascript
-const response = await fetch('http://localhost:8787/v1/audio/speech', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    input: 'Hello, world!',
-    voice: 'DeepSeek',
-    speed: 1.0,
-    pitch: 1.0,
-  }),
-});
-
-const audio = await response.arrayBuffer();
-// Use audio data (play, save, etc.)
-```
-
-### Python
-
-```python
-import requests
-
-response = requests.post(
-    'http://localhost:8787/v1/audio/speech',
-    json={
-        'input': 'Hello, world!',
-        'voice': 'DeepSeek',
-        'speed': 1.0,
-        'pitch': 1.0,
+    "input": "你好，这是一个测试",
+    "voice": "zh-CN-XiaoXiaoNeural",
+    "speed": 1.0,
+    "pitch": 1.0,
+    "stream": false,
+    "cleaning_options": {
+      "remove_markdown": true,
+      "remove_emoji": true,
+      "remove_urls": true
     }
-)
-
-if response.status_code == 200:
-    with open('output.mp3', 'wb') as f:
-        f.write(response.content)
+  }'
 ```
 
-## Configuration
+**响应：** MP3 音频流（二进制）
 
-### Environment Variables
+**参数说明：**
+- `input` (string, 必需): 要转语音的文本
+- `voice` (string, 必需): 声音 ID（从 /v1/models 获取）
+- `speed` (number, 可选): 语速 (0.25-2.0，默认 1.0)
+- `pitch` (number, 可选): 音调 (0.5-1.5，默认 1.0)
+- `stream` (boolean, 可选): 是否流式返回 (默认 false)
+- `cleaning_options` (object, 可选): 文本清理选项
+  - `remove_markdown`: 移除 Markdown 格式
+  - `remove_emoji`: 移除 Emoji
+  - `remove_urls`: 移除 URL
+  - `remove_newlines`: 移除换行符
+  - `remove_references`: 移除引用数字
 
-See `.env.example` for all available options:
+## 本地开发和测试
 
-- `API_KEY`: Optional API key for protected endpoints
-- `MAX_TEXT_LENGTH`: Maximum text length (default: 10,000)
-- `MIN_TEXT_LENGTH`: Minimum text length (default: 1)
-- `CHUNK_SIZE`: Text chunk size for batch processing (default: 500)
-- `MAX_CONCURRENCY`: Maximum concurrent API requests (default: 6)
-- `DEFAULT_VOICE`: Default voice to use (default: "DeepSeek")
-
-### Cloudflare KV Setup
-
-For production voice caching:
-
-1. Create KV namespaces in Cloudflare Dashboard
-2. Get the namespace IDs
-3. Update `wrangler.toml` with the IDs
-4. Deploy
-
-Voice cache expires after 24 hours and can be manually refreshed via the API.
-
-## Deployment
-
-### To Cloudflare
+### 启动开发服务器
 
 ```bash
-# Preview
-wrangler publish --env development
+# 启动开发服务器
+npx wrangler dev --local
 
-# Production
-wrangler publish --env production
+# 或使用 node 内置的测试模式
+npx wrangler dev --test
 ```
 
-See `DEPLOYMENT.md` for detailed deployment instructions.
+### 测试脚本示例 (test.sh)
 
-## Implementation Notes
-
-### Converted from Python
-
-Key components converted from the original Python NanoAITTS:
-
-1. **MD5 Hashing**: Pure JavaScript MD5 implementation
-2. **Request Headers**: Device platform, timestamp, access tokens with proper hashing
-3. **Voice Loading**: Caching robots.json from bot.n.cn API
-4. **Audio Generation**: POST requests to bot.n.cn TTS endpoint
-5. **Text Processing**: Multi-stage cleaning and intelligent chunking
-
-### Cloudflare Worker Specifics
-
-- Uses Cloudflare KV for persistent cache
-- Respects Worker subrequest limits (default 50)
-- Automatic batch processing for long texts
-- CORS support for browser requests
-- Global edge distribution
-
-### Performance
-
-- Typical response time: 1-5 seconds for single chunks
-- Batch processing: Up to 6 concurrent requests per batch
-- Voice cache: 24-hour TTL (configurable)
-- MP3 output is cacheable for 1 hour
-
-## Limitations
-
-- Maximum text length: 10,000 characters (configurable)
-- Cloudflare Worker timeout: 30 seconds (CPU)
-- Subrequest limit: 50 per request (respects with batching)
-- KV operations: Limited to configured namespaces
-
-## Error Handling
-
-The API returns standard error responses:
-
-```json
-{
-  "error": {
-    "message": "Error description",
-    "type": "invalid_request_error",
-    "code": 400
-  }
-}
-```
-
-Common status codes:
-- 200: Success
-- 400: Invalid request
-- 401: Unauthorized (if API key required)
-- 404: Not found
-- 500: Server error
-
-## Security
-
-- Optional API key authentication for sensitive endpoints
-- CORS restricted to configured origins (default: all)
-- Input validation and sanitization
-- Text length limits to prevent abuse
-- No sensitive data in logs
-
-## Troubleshooting
-
-### Voices not loading
-
-- Check network connectivity to bot.n.cn
-- Clear KV cache: POST `/v1/voices/refresh`
-- Check console logs in Wrangler
-
-### Slow responses
-
-- Check Cloudflare Worker logs
-- Monitor subrequest usage
-- Adjust CHUNK_SIZE for smaller chunks
-
-### Audio quality issues
-
-- Voice issues: Try different voice IDs from `/v1/voices`
-- Text encoding: Ensure UTF-8 text encoding
-- Network: Check bot.n.cn API availability
-
-## License
-
-MIT
-
-## Support
-
-For issues or questions:
-1. Check the README and DEPLOYMENT.md
-2. Review Cloudflare Worker logs
-3. Test with curl first before integrating
-
-## References
-
-- [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
-- [Wrangler CLI Documentation](https://developers.cloudflare.com/workers/wrangler/)
-- [KV Store Documentation](https://developers.cloudflare.com/workers/runtime-apis/kv/)
-- Original NanoAITTS Python implementation
-# 🎙️ anmitts2 Vue 3 TTS Web UI
-
-Modern Vue 3 web frontend for anmitts2 Text-to-Speech (TTS) application. This is a complete replacement for the original Tkinter desktop UI, providing the same functionality in a responsive web interface.
-
-## Features
-
-### Core Functionality
-- ✅ **Voice Selection**: Choose from multiple TTS voices from bot.n.cn
-- ✅ **Text Input**: Support for up to 5000 characters with real-time counting
-- ✅ **Parameter Control**: Adjustable speech rate (0.25x - 2.0x) and pitch (0.5 - 1.5)
-- ✅ **Audio Playback**: Built-in HTML5 audio player with controls
-- ✅ **Audio Download**: Save generated audio as MP3 files
-- ✅ **Streaming Support**: Both standard and streaming generation modes
-
-### Advanced Features
-- 🎯 **Text Cleaning Options**:
-  - Remove Markdown formatting
-  - Remove Emoji characters
-  - Remove URLs
-  - Remove line breaks
-  - Remove reference numbers
-  - Custom keyword filtering
-
-- 💾 **Data Persistence**:
-  - Auto-save API configuration
-  - Auto-save form data
-  - Restore state on page reload
-
-- 🎨 **Modern UI**:
-  - Responsive design (desktop, tablet, mobile)
-  - Smooth animations and transitions
-  - Glass-morphism design elements
-  - Professional color scheme
-
-## Architecture
-
-### Frontend
-- **Framework**: Vue 3 (via CDN, no build step required)
-- **Styling**: CSS 3 with gradient backgrounds and animations
-- **Storage**: localStorage for persistent configuration
-- **API Communication**: Fetch API for HTTP requests
-
-### Backend Integration
-- **Worker Class**: `TTSWorker` in `worker.py`
-- **HTTP Handler**: `handle_request()` method for request processing
-- **HTML Serving**: `get_html_content()` function for HTML delivery
-
-## Installation
-
-### 1. Clone or Download the Repository
 ```bash
-cd /path/to/anmitts2
-git clone <repository> .
+#!/bin/bash
+
+BASE_URL="http://localhost:8787"
+
+echo "Testing /api/health..."
+curl -s $BASE_URL/api/health | jq .
+
+echo -e "\n\nTesting /v1/models..."
+curl -s $BASE_URL/v1/models | jq '.data[0:2]'
+
+echo -e "\n\nTesting /v1/audio/speech (standard mode)..."
+curl -s -X POST $BASE_URL/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": "这是一个测试",
+    "voice": "zh-CN-XiaoXiaoNeural",
+    "speed": 1.0,
+    "stream": false
+  }' --output test.mp3 && echo "Audio saved to test.mp3"
 ```
 
-### 2. Install Dependencies
+## 故障排除
+
+### Q: 部署后访问 Worker URL 显示 404
+**A:** 检查 wrangler.toml 中的 name 字段，确保与实际部署的名称一致。
+
+### Q: API 调用返回 CORS 错误
+**A:** 检查浏览器控制台的错误信息。项目已配置 CORS 允许所有域名，如问题仍存在，检查网络连接。
+
+### Q: 音频生成速度很慢或超时
+**A:** 可能是 NanoAI API 响应慢或文本过长。建议：
+- 检查网络连接
+- 缩短输入文本（< 1000 字符）
+- 查看浏览器控制台是否有错误信息
+
+### Q: Worker 大小超过限制
+**A:** 如果遇到 413 Payload Too Large，可能是请求文本过长。缩短文本或分多次请求。
+
+### Q: 如何自定义域名？
+**A:** 在 Cloudflare 上添加自定义域名，然后在 wrangler.toml 中配置：
+```toml
+routes = [
+  { pattern = "yourdomain.com/api/*", zone_name = "yourdomain.com" }
+]
+```
+
+## 功能说明
+
+### 声音选择
+- 支持 20+ 中文和英文声音
+- 从 NanoAI (bot.n.cn) API 动态加载
+- 缓存声音列表以提高性能
+
+### 文本处理
+- **智能分块**：按句子边界分割，避免断句
+- **多阶段清理**：
+  - 移除 Markdown 格式（#、**、- 等）
+  - 移除 Emoji 表情
+  - 移除 URL 和链接
+  - 移除多余换行符
+  - 移除引用数字 [1] [2] 等
+
+### 播放模式
+- **流式播放**：边生成边播放，延迟低，用户体验好
+- **标准播放**：等待完整生成后播放，适合需要完整音频的场景
+
+### 本地缓存
+- 配置和表单数据自动保存到 localStorage
+- 页面刷新后自动恢复设置
+
+## 技术架构
+
+### 前端（Vue 3）
+- 通过 CDN 引入 Vue 3，无需构建工具
+- 响应式设计，支持桌面、平板、手机
+- 使用 CSS Grid 和 Flexbox 布局
+- 渐变背景和玻璃拟态设计
+
+### 后端（Cloudflare Workers）
+- 无服务器架构，全球边缘分发
+- 使用 Cloudflare KV 进行缓存
+- 兼容 OpenAI TTS API 格式
+- 支持流式和非流式响应
+
+### 音频处理
+- 基于 NanoAI (bot.n.cn) API
+- 自动批处理长文本
+- MP3 格式输出
+- 支持语速和音调调节
+
+## 性能指标
+
+- **响应时间**：1-5 秒（单段文本）
+- **批处理并发**：最多 6 个并发请求
+- **声音缓存**：24 小时 TTL（可配置）
+- **音频缓存**：1 小时（Cloudflare CDN）
+
+## 安全特性
+
+- 可选的 API 密钥认证
+- 跨域请求保护（可配置 CORS 策略）
+- 输入验证和清理
+- 文本长度限制防止滥用
+- 敏感信息日志保护
+
+## 开发环境配置
+
+### 开发模式运行
+
 ```bash
-pip install -r requirements.txt
+# 启动本地开发环境
+npm run dev
+# 或
+npx wrangler dev
+
+# 访问 http://localhost:8787
 ```
 
-### 3. Run the Application
+### 生产部署
 
-#### Option A: Flask Development Server
 ```bash
-python app.py
-```
-The application will be available at `http://localhost:5000`
+# 预览部署
+npx wrangler publish --env development
 
-#### Option B: Production Server (Gunicorn)
+# 正式部署
+npx wrangler publish --env production
+```
+
+### 环境变量设置
+
+在 Cloudflare Dashboard 中设置环境变量：
+1. 进入 Workers & Pages
+2. 选择你的 Worker
+3. 进入 Settings > Variables
+4. 添加环境变量
+
+## 监控和日志
+
+### 查看 Worker 日志
 ```bash
-pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
+# 实时日志
+npx wrangler tail
+
+# 查看历史日志
+# 在 Cloudflare Dashboard > Workers & Pages > 你的 Worker > Logs
 ```
 
-#### Option C: Docker
-```bash
-docker build -t anmitts2-ui .
-docker run -p 5000:5000 anmitts2-ui
-```
+### 性能监控
+- 使用 Cloudflare Analytics 监控访问量
+- 通过 Worker Metrics 监控执行时间
+- 查看 KV 存储使用情况
 
-#### Option D: Direct Integration
-```python
-from worker import TTSWorker
+## 扩展和自定义
 
-worker = TTSWorker()
-html = worker.get_html_content()
-# Use html in your web framework
-```
+### 添加新声音
+1. 在 Cloudflare KV 中更新声音列表
+2. 或修改 `src/services/nano-ai-tts.js` 中的声音获取逻辑
 
-## Configuration
+### 自定义 UI
+编辑 `src/index.js` 中的 HTML 模板部分，修改：
+- CSS 样式
+- Vue 组件结构
+- 响应式布局
 
-### API Setup
+### 添加新功能
+- 在 `src/services/` 目录下添加新的服务
+- 在 `src/utils/` 目录下添加工具函数
+- 更新 API 路由处理逻辑
 
-1. **API URL**: Enter your TTS API endpoint (e.g., `http://localhost:8000`)
-2. **API Key**: Optional authentication key (depends on your API)
+## 项目来源和参考
 
-The settings are automatically saved to browser's localStorage.
+- **原项目**：anmitts2（Python Tkinter TTS 工具）
+- **迁移到**：Cloudflare Workers（无服务器架构）
+- **参考项目**：edgetts（文本处理和批处理实现）
+- **语音服务**：NanoAI (bot.n.cn)
 
-### Supported API Endpoints
+## 许可证
 
-The application expects the following API endpoints:
+MIT License
 
-```
-POST /v1/audio/speech
-  Request:
-    {
-      "input": "Text to convert",
-      "voice": "voice_id",
-      "speed": 1.0,
-      "pitch": 1.0,
-      "stream": false,
-      "cleaning_options": {
-        "removeMarkdown": false,
-        "removeEmoji": false,
-        "removeUrl": false,
-        "removeLineBreaks": false,
-        "removeRefNumber": false,
-        "customKeywords": ""
-      }
-    }
-  
-  Response (audio/mpeg):
-    Binary MP3 audio data
+## 技术支持
 
-GET /v1/models
-  Response:
-    {
-      "data": [
-        {
-          "id": "voice_id",
-          "name": "Voice Name"
-        },
-        ...
-      ]
-    }
-```
+如有问题或建议：
+1. 首先查看本 README.md 和故障排除章节
+2. 检查 Cloudflare Worker 日志
+3. 使用 curl 测试 API 端点
+4. 提交 Issue 到项目仓库
 
-## Usage Guide
+## 相关链接
 
-### Basic Usage
-
-1. **Configure API**: Click on "⚙️ API 配置" to expand settings and enter your API endpoint
-2. **Enter Text**: Type or paste text in the "📝 输入文本" section
-3. **Select Voice**: Choose a voice from the dropdown menu
-4. **Adjust Parameters**: Use sliders to set speech rate and pitch
-5. **Generate Audio**: Click either:
-   - "▶️ 生成语音 (标准)" for standard mode (generate then play)
-   - "⚡ 生成语音 (流式)" for streaming mode (play while generating)
-6. **Download**: Click "💾 下载音频" to save the audio file
-
-### Advanced Options
-
-#### Text Cleaning
-Expand the "🧹 高级清理选项" section to enable text preprocessing:
-- Automatically remove specific formatting or content types
-- Add custom keywords to filter out
-
-#### Pause Insertion
-Click "插入停顿 (500ms)" to insert pause markers in your text:
-- Format: `[pau:XXX]` where XXX is duration in milliseconds
-
-#### Streaming Mode
-For faster playback of long text:
-- Audio plays as it's being generated
-- Useful for real-time synthesis
-- Buffers data for download capability
-
-## Data Privacy
-
-- **Local Storage**: All configuration is stored in your browser's localStorage
-- **API Communication**: Audio synthesis requests are sent to your configured API endpoint
-- **No Cloud Upload**: By default, no data is sent to external services unless configured
-- **Audio Cleanup**: Generated audio is stored in browser memory and cleared when page unloads
-
-## Browser Compatibility
-
-| Browser | Support | Notes |
-|---------|---------|-------|
-| Chrome/Edge | ✅ Full | Recommended |
-| Firefox | ✅ Full | Full support |
-| Safari | ✅ Full | iOS 14+ recommended |
-| IE 11 | ❌ No | Not supported |
-
-## Troubleshooting
-
-### "请先配置 API 地址"
-**Issue**: Cannot generate audio
-**Solution**: 
-1. Click "⚙️ API 配置" to expand settings
-2. Enter your API endpoint URL (e.g., `http://localhost:8000`)
-3. Optionally add API key if required
-
-### Audio Won't Play
-**Issue**: Player shows but no sound
-**Possible Causes**:
-1. Audio file is corrupted - try generating again
-2. Browser doesn't support MP3 - try a different browser
-3. Audio permissions disabled - check browser settings
-
-### "API 错误: 404"
-**Issue**: Cannot connect to API
-**Solution**:
-1. Verify the API URL is correct
-2. Check that the API server is running
-3. Verify CORS settings on your API server
-4. Check browser console for detailed error messages
-
-### Slow Performance
-**Issue**: Lag or stuttering
-**Solution**:
-1. Use streaming mode for long text
-2. Reduce text length
-3. Adjust speech rate
-4. Check browser's available memory
-
-## Development
-
-### Project Structure
-```
-anmitts2/
-├── index.html          # Vue 3 frontend application
-├── worker.py           # Worker class with HTML serving
-├── app.py              # Flask example server
-├── requirements.txt    # Python dependencies
-├── README.md          # This file
-└── Dockerfile         # Docker configuration
-```
-
-### Modifying the UI
-
-The entire UI is defined in `index.html`. To customize:
-
-1. **Styles**: Edit the `<style>` section for CSS changes
-2. **Layout**: Edit the HTML structure in the template
-3. **Functionality**: Edit the Vue data, computed properties, and methods
-
-### Adding New Features
-
-To add new features:
-
-1. Add data properties in the `data()` function
-2. Add computed properties if needed
-3. Add methods for event handlers
-4. Add corresponding UI elements in the HTML template
-5. Save/load data in localStorage as needed
-
-## API Integration
-
-### For FastAPI Backend
-```python
-from fastapi import FastAPI
-from worker import get_html_content
-
-app = FastAPI()
-
-@app.get("/")
-async def serve_ui():
-    html = get_html_content()
-    return HTMLResponse(content=html)
-```
-
-### For Django Backend
-```python
-from django.http import HttpResponse
-from worker import get_html_content
-
-def serve_ui(request):
-    html = get_html_content()
-    return HttpResponse(html, content_type='text/html')
-```
-
-### For Starlette
-```python
-from starlette.applications import Starlette
-from starlette.responses import HTMLResponse
-from worker import get_html_content
-
-async def homepage(request):
-    html = get_html_content()
-    return HTMLResponse(html)
-```
-
-## Testing
-
-### Manual Testing Checklist
-- [ ] Page loads without errors
-- [ ] API configuration can be saved and persists
-- [ ] Text input updates character count
-- [ ] Voice dropdown loads voices
-- [ ] Speed and pitch sliders work
-- [ ] Standard mode generates and plays audio
-- [ ] Streaming mode generates audio progressively
-- [ ] Audio can be downloaded with correct filename
-- [ ] Cleaning options toggle correctly
-- [ ] Status messages appear and disappear
-- [ ] Form data persists after page reload
-- [ ] Works on mobile/tablet view
-- [ ] Error messages show for invalid inputs
-
-## Performance Optimization
-
-### Frontend Optimization
-- Vue 3 loaded via CDN for faster initial load
-- CSS animations use GPU acceleration
-- Audio playback uses browser's native player
-- localStorage eliminates redundant API calls
-
-### Backend Optimization
-- Static HTML is cached after first load
-- Use CDN for serving static assets
-- Enable gzip compression on your web server
-- Use production WSGI server (gunicorn, etc.)
-
-## Security Considerations
-
-1. **API Keys**: Store sensitive API keys securely
-   - Use environment variables
-   - Never commit keys to version control
-   - Use HTTPS for API communication
-
-2. **Content Security Policy**: Configure CSP headers if needed
-3. **CORS**: Configure CORS on your API server to allow frontend domain
-4. **Input Validation**: API should validate all inputs
-5. **Rate Limiting**: Implement rate limits on API endpoints
-
-## License
-
-[Your License Here]
-
-## Support
-
-For issues, feature requests, or contributions, please:
-1. Check the troubleshooting section
-2. Review error messages in browser console (F12)
-3. Submit issues to the repository
-
-## Changelog
-
-### Version 1.0.0 (Current)
-- Initial Vue 3 implementation
-- Full feature parity with Tkinter UI
-- Responsive design
-- Streaming audio support
-- Text cleaning options
-- Local storage persistence
-
-## Credits
-
-Built as a modern replacement for the anmitts2 Tkinter TTS application.
-
----
-
-**Last Updated**: 2024
-**Framework**: Vue 3
-**Build Tool**: None (CDN-based, no build required)
+- [Cloudflare Workers 文档](https://developers.cloudflare.com/workers/)
+- [Wrangler CLI 文档](https://developers.cloudflare.com/workers/wrangler/)
+- [KV 存储文档](https://developers.cloudflare.com/workers/runtime-apis/kv/)
+- [Cloudflare 免费账户](https://dash.cloudflare.com)
