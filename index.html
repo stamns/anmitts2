@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎙️ 纳米AI文字转语音工具</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2196F3;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --danger: #F44336;
+            --info: #00BCD4;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --bg-light: #f5f7fa;
+            --bg-card: #ffffff;
+            --border: #e0e0e0;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            padding: 20px;
+        }
+
+        #app {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--bg-light);
+        }
+
+        .header-icon {
+            font-size: 48px;
+            line-height: 1;
+        }
+
+        .header-content h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+        }
+
+        .header-content p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Form groups */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        /* Details/Collapsible */
+        details {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            background: var(--bg-light);
+        }
+
+        details summary {
+            cursor: pointer;
+            user-select: none;
+            font-weight: 500;
+            color: var(--text-primary);
+            padding: 8px;
+            margin: -8px;
+        }
+
+        details summary:hover {
+            color: var(--primary);
+        }
+
+        details[open] summary {
+            color: var(--primary);
+            margin-bottom: 12px;
+        }
+
+        details > div {
+            padding-left: 8px;
+        }
+
+        /* Text input */
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+
+        /* Character count */
+        .char-count {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        /* Select/Dropdown */
+        select, input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+
+        /* Range slider */
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(to right, var(--primary), var(--info));
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        input[type="range"]::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .slider-value {
+            min-width: 40px;
+            text-align: center;
+            font-weight: 500;
+            color: var(--primary);
+        }
+
+        /* Grid for sliders */
+        .sliders-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .sliders-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Buttons */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #1976D2;
+            box-shadow: var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #45a049;
+            box-shadow: var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-warning:hover:not(:disabled) {
+            background: #F57C00;
+            box-shadow: var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #D32F2F;
+            box-shadow: var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #9E9E9E;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #757575;
+            box-shadow: var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Status message */
+        .status {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status-success {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .status-error {
+            background: rgba(244, 67, 54, 0.1);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .status-warning {
+            background: rgba(255, 152, 0, 0.1);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+
+        .status-info {
+            background: rgba(0, 188, 212, 0.1);
+            color: var(--info);
+            border: 1px solid var(--info);
+        }
+
+        .status-icon {
+            font-size: 18px;
+        }
+
+        /* Audio player */
+        audio {
+            width: 100%;
+            margin-bottom: 16px;
+            border-radius: 8px;
+        }
+
+        /* Checkboxes */
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+
+            .header-icon {
+                font-size: 36px;
+            }
+
+            .header-content h1 {
+                font-size: 24px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Helper text */
+        .helper-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            background: var(--bg-light);
+            color: var(--text-secondary);
+        }
+
+        /* Alert */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background: rgba(33, 150, 243, 0.1);
+            border-left-color: var(--primary);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-icon">🎙️</div>
+                <div class="header-content">
+                    <h1>纳米AI文字转语音工具</h1>
+                    <p>Text to Speech Converter</p>
+                </div>
+            </div>
+
+            <!-- Alert for missing config -->
+            <div v-if="!config.apiUrl || !config.apiKey" class="alert alert-info">
+                ⚠️ 请先在下方配置 API 地址和密钥
+            </div>
+
+            <!-- Status message -->
+            <div v-if="status.message" 
+                 :class="['status', `status-${status.type}`]">
+                <span class="status-icon">{{ status.icon }}</span>
+                <span>{{ status.message }}</span>
+            </div>
+
+            <!-- API Configuration Section -->
+            <div class="section">
+                <details>
+                    <summary>⚙️ API 配置</summary>
+                    <div>
+                        <div class="form-group">
+                            <label for="apiUrl">API 地址</label>
+                            <input 
+                                id="apiUrl"
+                                v-model="config.apiUrl" 
+                                type="text" 
+                                placeholder="例: http://localhost:8000"
+                                @change="saveConfig">
+                            <div class="helper-text">TTS API 服务器地址</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="apiKey">API 密钥</label>
+                            <input 
+                                id="apiKey"
+                                v-model="config.apiKey" 
+                                type="text" 
+                                placeholder="输入 API 密钥"
+                                @change="saveConfig">
+                            <div class="helper-text">可选，某些 API 可能需要认证</div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+
+            <!-- Text Input Section -->
+            <div class="section">
+                <div class="section-title">📝 输入文本</div>
+                <textarea 
+                    v-model="form.text" 
+                    placeholder="请输入要转换为语音的文本..."
+                    @input="updateStatus"></textarea>
+                <div class="char-count">{{ charCount }} / 5000</div>
+                <div class="button-group" style="margin-top: 12px;">
+                    <button class="btn-secondary btn-small" @click="form.text = ''">清除</button>
+                    <button class="btn-secondary btn-small" @click="insertPause">插入停顿 (500ms)</button>
+                </div>
+            </div>
+
+            <!-- Voice Selection -->
+            <div class="section">
+                <div class="section-title">🎵 声音选择</div>
+                <div class="form-group">
+                    <label for="voice">选择声音</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select 
+                            id="voice"
+                            v-model="form.voice" 
+                            @change="saveForm">
+                            <option v-for="(voice, tag) in voices" :key="tag" :value="tag">
+                                {{ voice.name }}
+                            </option>
+                        </select>
+                        <button class="btn-primary btn-small" @click="loadVoices">🔄</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parameters -->
+            <div class="section">
+                <div class="section-title">📊 参数调节</div>
+                <div class="sliders-grid">
+                    <div class="form-group">
+                        <label for="speed">语速 ({{ speedDisplay }}x)</label>
+                        <div class="slider-group">
+                            <input 
+                                id="speed"
+                                v-model.number="form.speed" 
+                                type="range" 
+                                min="0.25" 
+                                max="2.0" 
+                                step="0.01"
+                                @change="saveForm">
+                            <div class="slider-value">{{ speedDisplay }}x</div>
+                        </div>
+                        <div class="helper-text">0.25 - 2.0</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="pitch">音调 ({{ pitchDisplay }}x)</label>
+                        <div class="slider-group">
+                            <input 
+                                id="pitch"
+                                v-model.number="form.pitch" 
+                                type="range" 
+                                min="0.5" 
+                                max="1.5" 
+                                step="0.01"
+                                @change="saveForm">
+                            <div class="slider-value">{{ pitchDisplay }}x</div>
+                        </div>
+                        <div class="helper-text">0.5 - 1.5</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Cleaning Options -->
+            <div class="section">
+                <details>
+                    <summary>🧹 高级清理选项</summary>
+                    <div>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input 
+                                    id="removeMarkdown"
+                                    v-model="form.cleaning.removeMarkdown" 
+                                    type="checkbox"
+                                    @change="saveForm">
+                                <label for="removeMarkdown">移除 Markdown</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input 
+                                    id="removeEmoji"
+                                    v-model="form.cleaning.removeEmoji" 
+                                    type="checkbox"
+                                    @change="saveForm">
+                                <label for="removeEmoji">移除 Emoji</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input 
+                                    id="removeUrl"
+                                    v-model="form.cleaning.removeUrl" 
+                                    type="checkbox"
+                                    @change="saveForm">
+                                <label for="removeUrl">移除 URL</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input 
+                                    id="removeLineBreaks"
+                                    v-model="form.cleaning.removeLineBreaks" 
+                                    type="checkbox"
+                                    @change="saveForm">
+                                <label for="removeLineBreaks">移除换行符</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input 
+                                    id="removeRefNumber"
+                                    v-model="form.cleaning.removeRefNumber" 
+                                    type="checkbox"
+                                    @change="saveForm">
+                                <label for="removeRefNumber">移除引用数字</label>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top: 16px;">
+                            <label for="customKeywords">自定义关键词 (逗号分隔)</label>
+                            <input 
+                                id="customKeywords"
+                                v-model="form.cleaning.customKeywords" 
+                                type="text" 
+                                placeholder="例: 关键词1,关键词2,关键词3"
+                                @change="saveForm">
+                        </div>
+                    </div>
+                </details>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="section">
+                <div class="button-group">
+                    <button 
+                        class="btn-warning" 
+                        @click="playStandard"
+                        :disabled="!form.text || isGenerating">
+                        <span v-if="isGenerating" class="spinner"></span>
+                        <span v-else>▶️</span>
+                        生成语音 (标准)
+                    </button>
+                    <button 
+                        class="btn-info" 
+                        @click="playStreamWithMSE"
+                        :disabled="!form.text || isGenerating"
+                        style="background: var(--info);">
+                        <span v-if="isGenerating" class="spinner"></span>
+                        <span v-else>⚡</span>
+                        生成语音 (流式)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Audio Player -->
+            <div v-if="audioSrc" class="section">
+                <audio 
+                    controls 
+                    :src="audioSrc"
+                    preload="auto"
+                    @loadstart="onAudioLoadStart"
+                    @canplay="onAudioCanPlay"
+                    @error="onAudioError">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+
+            <!-- Download Button -->
+            <div v-if="audioSrc" class="section">
+                <button class="btn-success" @click="downloadAudio">
+                    💾 下载音频
+                </button>
+                <div class="helper-text" style="margin-top: 8px;">
+                    文件名: {{ downloadFilename }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    config: {
+                        apiUrl: '',
+                        apiKey: ''
+                    },
+                    form: {
+                        text: '',
+                        voice: 'DeepSeek',
+                        speed: 1.0,
+                        pitch: 1.0,
+                        cleaning: {
+                            removeMarkdown: false,
+                            removeEmoji: false,
+                            removeUrl: false,
+                            removeLineBreaks: false,
+                            removeRefNumber: false,
+                            customKeywords: ''
+                        }
+                    },
+                    voices: {
+                        'DeepSeek': { name: 'DeepSeek (默认)', iconUrl: '' },
+                        'xiaoxiao': { name: '晓晓 (女)', iconUrl: '' },
+                        'yunxi': { name: '云希 (女)', iconUrl: '' },
+                        'yunyang': { name: '云扬 (男)', iconUrl: '' },
+                        'xiaoan': { name: '小安 (女)', iconUrl: '' }
+                    },
+                    status: {
+                        message: '',
+                        type: 'info',
+                        icon: 'ℹ️'
+                    },
+                    audioSrc: '',
+                    isGenerating: false,
+                    audioBuffer: []
+                };
+            },
+            computed: {
+                charCount() {
+                    return this.form.text.length;
+                },
+                speedDisplay() {
+                    return this.form.speed.toFixed(2);
+                },
+                pitchDisplay() {
+                    return this.form.pitch.toFixed(2);
+                },
+                downloadFilename() {
+                    return `tts_${new Date().toISOString().slice(0, 19).replace(/[-:]/g, '')}.mp3`;
+                }
+            },
+            methods: {
+                async generateSpeech(isStream) {
+                    if (!this.config.apiUrl) {
+                        this.updateStatus('❌', '请先配置 API 地址', 'error');
+                        return;
+                    }
+                    
+                    if (!this.form.text.trim()) {
+                        this.updateStatus('⚠️', '请输入要转换的文本', 'warning');
+                        return;
+                    }
+
+                    if (this.form.text.length > 5000) {
+                        this.updateStatus('⚠️', '文本长度不能超过 5000 个字符', 'warning');
+                        return;
+                    }
+
+                    this.isGenerating = true;
+                    this.updateStatus('⏳', isStream ? '流式生成中...' : '标准生成中...', 'warning');
+
+                    try {
+                        const requestBody = {
+                            input: this.form.text,
+                            voice: this.form.voice,
+                            speed: this.form.speed,
+                            pitch: this.form.pitch,
+                            stream: isStream,
+                            cleaning_options: this.form.cleaning
+                        };
+
+                        const headers = {
+                            'Content-Type': 'application/json'
+                        };
+
+                        if (this.config.apiKey) {
+                            headers['Authorization'] = `Bearer ${this.config.apiKey}`;
+                        }
+
+                        const url = `${this.config.apiUrl}/v1/audio/speech`;
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: headers,
+                            body: JSON.stringify(requestBody)
+                        });
+
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            throw new Error(`API 错误: ${response.status} - ${errorText}`);
+                        }
+
+                        if (isStream) {
+                            await this.handleStreamResponse(response);
+                        } else {
+                            const blob = await response.blob();
+                            this.audioBuffer = new Uint8Array(await blob.arrayBuffer());
+                            this.audioSrc = URL.createObjectURL(blob);
+                            this.updateStatus('✓', '音频生成成功', 'success');
+                        }
+                    } catch (error) {
+                        this.updateStatus('❌', error.message, 'error');
+                        console.error('生成音频错误:', error);
+                    } finally {
+                        this.isGenerating = false;
+                    }
+                },
+
+                async handleStreamResponse(response) {
+                    const reader = response.body.getReader();
+                    const chunks = [];
+                    let totalBytes = 0;
+
+                    try {
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            
+                            chunks.push(value);
+                            totalBytes += value.length;
+                            
+                            const progressPercent = Math.min(Math.round((totalBytes / 102400) * 100), 99);
+                            this.updateStatus('📥', `接收中... ${progressPercent}%`, 'info');
+                        }
+
+                        const audioBuffer = new Uint8Array(totalBytes);
+                        let offset = 0;
+                        for (const chunk of chunks) {
+                            audioBuffer.set(chunk, offset);
+                            offset += chunk.length;
+                        }
+
+                        this.audioBuffer = audioBuffer;
+                        const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
+                        this.audioSrc = URL.createObjectURL(blob);
+                        this.updateStatus('✓', '音频生成成功', 'success');
+                    } catch (error) {
+                        throw new Error(`流式传输错误: ${error.message}`);
+                    }
+                },
+
+                playStandard() {
+                    this.generateSpeech(false);
+                },
+
+                playStreamWithMSE() {
+                    this.generateSpeech(true);
+                },
+
+                downloadAudio() {
+                    if (this.audioBuffer.length === 0) {
+                        this.updateStatus('⚠️', '没有音频数据可下载', 'warning');
+                        return;
+                    }
+
+                    const blob = new Blob([this.audioBuffer], { type: 'audio/mpeg' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = this.downloadFilename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    this.updateStatus('✓', `音频已下载: ${this.downloadFilename}`, 'success');
+                },
+
+                insertPause() {
+                    const pauseTag = '[pau:500]';
+                    const textarea = document.querySelector('textarea');
+                    if (textarea) {
+                        const start = textarea.selectionStart;
+                        const end = textarea.selectionEnd;
+                        const text = this.form.text;
+                        this.form.text = text.substring(0, start) + pauseTag + text.substring(end);
+                        this.$nextTick(() => {
+                            textarea.selectionStart = textarea.selectionEnd = start + pauseTag.length;
+                            textarea.focus();
+                        });
+                    }
+                },
+
+                updateStatus(icon, message, type) {
+                    this.status = { icon, message, type };
+                    if (type === 'success' || type === 'error' || type === 'warning') {
+                        setTimeout(() => {
+                            if (this.status.message === message) {
+                                this.status = { message: '', type: 'info', icon: 'ℹ️' };
+                            }
+                        }, 5000);
+                    }
+                },
+
+                saveConfig() {
+                    localStorage.setItem('tts_config', JSON.stringify(this.config));
+                },
+
+                loadConfig() {
+                    const saved = localStorage.getItem('tts_config');
+                    if (saved) {
+                        this.config = JSON.parse(saved);
+                    }
+                },
+
+                saveForm() {
+                    localStorage.setItem('tts_form', JSON.stringify(this.form));
+                },
+
+                loadForm() {
+                    const saved = localStorage.getItem('tts_form');
+                    if (saved) {
+                        this.form = { ...this.form, ...JSON.parse(saved) };
+                    }
+                },
+
+                async loadVoices() {
+                    if (!this.config.apiUrl) {
+                        this.updateStatus('⚠️', '请先配置 API 地址', 'warning');
+                        return;
+                    }
+
+                    this.updateStatus('⏳', '加载声音列表...', 'info');
+
+                    try {
+                        const url = `${this.config.apiUrl}/v1/models`;
+                        const headers = {};
+
+                        if (this.config.apiKey) {
+                            headers['Authorization'] = `Bearer ${this.config.apiKey}`;
+                        }
+
+                        const response = await fetch(url, { headers });
+                        if (!response.ok) {
+                            throw new Error(`无法加载声音列表: ${response.status}`);
+                        }
+
+                        const data = await response.json();
+                        
+                        // 假设返回格式为 { data: [{ id: 'tag', name: 'name' }] }
+                        if (data.data && Array.isArray(data.data)) {
+                            this.voices = {};
+                            data.data.forEach(item => {
+                                this.voices[item.id || item.tag] = {
+                                    name: item.name || item.title,
+                                    iconUrl: item.iconUrl || item.icon || ''
+                                };
+                            });
+                            this.updateStatus('✓', `已加载 ${Object.keys(this.voices).length} 个声音`, 'success');
+                        } else {
+                            throw new Error('声音列表格式不符');
+                        }
+                    } catch (error) {
+                        this.updateStatus('❌', error.message, 'error');
+                        console.error('加载声音列表错误:', error);
+                    }
+                },
+
+                onAudioLoadStart() {
+                    this.updateStatus('📥', '加载中...', 'info');
+                },
+
+                onAudioCanPlay() {
+                    this.updateStatus('✓', '就绪', 'success');
+                },
+
+                onAudioError() {
+                    this.updateStatus('❌', '音频加载失败', 'error');
+                }
+            },
+            mounted() {
+                this.loadConfig();
+                this.loadForm();
+                
+                // 页面关闭时清理 Blob URLs
+                window.addEventListener('beforeunload', () => {
+                    if (this.audioSrc) {
+                        URL.revokeObjectURL(this.audioSrc);
+                    }
+                });
+
+                // 初始状态
+                if (this.config.apiUrl && this.config.apiKey) {
+                    this.updateStatus('✓', '配置已加载', 'success');
+                } else {
+                    this.updateStatus('⚠️', '请配置 API', 'warning');
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
