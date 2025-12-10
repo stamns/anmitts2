@@ -1,7 +1,7 @@
 {
-  "name": "nanoaitts-worker",
+  "name": "anmitts2",
   "version": "1.0.0",
-  "description": "Cloudflare Worker for NanoAITTS - Text to Speech conversion using bot.n.cn API",
+  "description": "Cloudflare Worker for anmitts2 - Text to Speech conversion using bot.n.cn API",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
