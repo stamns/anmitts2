@@ -7,10 +7,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "publish": "wrangler publish",
-    "test": "node tests/test.js",
-    "lint": "eslint src --fix",
-    "format": "prettier --write src"
+    "publish": "wrangler publish"
   },
   "keywords": [
     "tts",
